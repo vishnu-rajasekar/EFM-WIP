@@ -79,6 +79,8 @@ document.addEventListener('DOMContentLoaded', function () {
             geotechnicContent.style.display = 'block';
         });
     }
+
+
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
     //   ██████╗ ███████╗ ██████╗ ███╗   ███╗███████╗████████╗██████╗ ██╗   ██╗    ████████╗ █████╗ ██████╗ 
@@ -193,12 +195,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const updatedName = nameInput.value;
             element.name = updatedName;
             saveElementsToLocalStorage();
+            // NEW: send full updated data to Python
+            sendUpdatedElementsToPython();
         });
 
         thicknessInput.addEventListener('change', function () {
             const updatedThickness = thicknessInput.value;
             element.thickness = updatedThickness;
             saveElementsToLocalStorage();
+            // NEW: send full updated data to Python
+            sendUpdatedElementsToPython();
         });
 
         // Add click event for the Add Geo button
@@ -231,6 +237,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 row.classList.add('active-row');
             });
         });
+    }
+    
+    function sendUpdatedElementsToPython() {
+        // Rebuild the entire elementsList from localStorage or from memory:
+        // (If your local `elementsList` is always in sync, you can just do this)
+        const elementsJson = JSON.stringify(elementsList);
+    
+        // Construct a special URL that triggers the "updateelements" event
+        // in the Python code:
+        window.location.href = 
+            "updateelements:update?data=" + encodeURIComponent(elementsJson);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////

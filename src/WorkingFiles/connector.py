@@ -17,17 +17,10 @@ class Element:
         self.geometries = geometries
         self.thickness = thickness
 
-<<<<<<< HEAD:src/Gh/connector.py
-class MyComponent():
-    
-    #slider_values = {}
-
-=======
 class MyComponent:
     
     #slider_values = {}
     @staticmethod
->>>>>>> c7c011291f94c54e1bc7c8da4c5174846087559f:src/WorkingFiles/connector.py
     def RunScript(gh_doc, component, get_inputs, path):
         # Define a standalone function to recompute Grasshopper solution
         def schedule_recompute():
@@ -168,6 +161,8 @@ class MyComponent:
                             # Recreate Element instances
                             elements = [Element(d['name'], d.get('geometries', []), d['thickness']) for d in elements_data]
                             sc.sticky['elements'] = elements
+                            # SCHEDULE A RECOMPUTE
+                            schedule_recompute()
                     except Exception as ex:
                         print("Error updating elements:", ex)
 
