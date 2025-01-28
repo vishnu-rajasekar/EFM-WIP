@@ -157,11 +157,35 @@ class MyComponent:
                         encoded_data = params.get('data', '')
                         if encoded_data:
                             elements_json = System.Uri.UnescapeDataString(encoded_data)
-                            elements_data = json.loads(elements_json)
-                            # Recreate Element instances
+                            updated_data = json.loads(elements_json) # list of dicts from JS
+
+                            """ # Recreate Element instances
                             elements = [Element(d['name'], d.get('geometries', []), d['thickness']) for d in elements_data]
                             sc.sticky['elements'] = elements
                             # SCHEDULE A RECOMPUTE
+                            schedule_recompute() """
+
+                            old_elements = sc.sticky.get("elements", [])
+                            new_elements = []
+
+                            for d in updated_data:
+                                # See if there's an old element with the same name
+                                matching_old_elem = next((el for el in old_elements if el.name == d["name"]), None)
+
+                                if matching_old_elem:
+                                    # Keep old geometries, update thickness
+                                    geometries = matching_old_elem.geometries
+                                else:
+                                    # It's a truly new element
+                                    geometries = []
+
+                                # Build the final new element
+                                new_elem = Element(d["name"], geometries, d["thickness"])
+                                new_elements.append(new_elem)
+
+                            # Now replace sticky
+                            sc.sticky["elements"] = new_elements
+
                             schedule_recompute()
                     except Exception as ex:
                         print("Error updating elements:", ex)
