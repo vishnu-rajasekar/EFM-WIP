@@ -17,6 +17,11 @@
     <Reference Include="KarambaCommon">
       <HintPath>C:\Program Files\Rhino 8\Plug-ins\Karamba\karambaCommon.dll</HintPath>
     </Reference>
+	  
+	<Reference Include="Karamba">
+		<HintPath>C:\Program Files\Rhino 8\Plug-ins\Karamba\karamba.gha</HintPath>
+	</Reference>
+	  
     <Reference Include="RhinoCommon">
       <HintPath>C:\Program Files\Rhino 8\System\netcore\RhinoCommon.dll</HintPath>
       <Private>False</Private>

@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', function () {
     let materialsData = [];
     let fieldNames = [];
 
+    //////////////////////////////////////////////////////////////////////////
+    let elementsList = getElementsFromLocalStorage();
+    // Flag for material loading once
+    window.materialsLoaded = false;
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -60,9 +65,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Load materials from Excel file when the material tab is activated
-            if (!materialsLoaded) {
+            if (!window.materialsLoaded) {
                 loadMaterialsFromExcel();
-                materialsLoaded = true;
+                window.materialsLoaded = true;
             }
         });
 
@@ -100,8 +105,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Initialize elementsList with data from localStorage
-    let elementsList = getElementsFromLocalStorage();
 
     // Listen for the 'elementsLoaded' event dispatched from Python
     window.addEventListener('elementsLoaded', function () {
@@ -211,13 +214,10 @@ document.addEventListener('DOMContentLoaded', function () {
         buttonCell.querySelector('.add-geo').addEventListener('click', function () {
             const geometryName = element.name;
             const geometryThickness = element.thickness;
-
             if (geometryName && !isNaN(geometryThickness)) {
                 console.log('Element Selected for Geo:', element);
-
                 // Save the updated elements list to local storage
                 saveElementsToLocalStorage();
-
                 // Notify Python of the new geometry (if required)
                 window.location.href = `geometryupdate:geo?${encodeURIComponent(geometryName)},${geometryThickness}`;
             } else {
@@ -239,16 +239,31 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
     
-    function sendUpdatedElementsToPython() {
-        // Rebuild the entire elementsList from localStorage or from memory:
-        // (If your local `elementsList` is always in sync, you can just do this)
-        const elementsJson = JSON.stringify(elementsList);
+    // function sendUpdatedElementsToPython() {
+    //     // Rebuild the entire elementsList from localStorage or from memory:
+    //     // (If your local `elementsList` is always in sync, you can just do this)
+    //     const elementsJson = JSON.stringify(elementsList);
     
-        // Construct a special URL that triggers the "updateelements" event
-        // in the Python code:
-        window.location.href = 
-            "updateelements:update?data=" + encodeURIComponent(elementsJson);
+    //     // Construct a special URL that triggers the "updateelements" event
+    //     // in the Python code:
+    //     window.location.href = 
+    //         "updateelements:update?data=" + encodeURIComponent(elementsJson);
+    // }
+
+    function sendUpdatedElementsToPython() {
+        const EFM = {
+            GeomDict: {
+                Elements: elementsList // your existing array of {name, thickness, geometries=[]}
+            }
+            // If you have other nested dicts, define them similarly
+            // MatDict: { ... },
+            // LoadDict: { ... },
+            // etc.
+        };
+        const efmJson = JSON.stringify(EFM);
+        window.location.href = "updateelements:update?data=" + encodeURIComponent(efmJson);
     }
+    
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // LOCAL STORAGE HANDLING
@@ -256,6 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function saveElementsToLocalStorage() {
         localStorage.setItem('elementsList', JSON.stringify(elementsList));
+        // sendUpdatedElementsToPython(); // Send updated data to Python
     }
 
     // Modify getElementsFromLocalStorage function
@@ -290,7 +306,9 @@ document.addEventListener('DOMContentLoaded', function () {
             row.dataset.elementIndex = index;
         });
     }
-
+    
+    // Undo example if needed:c
+    let historyStack = [];
     function undoLastAction() {
         if (historyStack.length > 0) {
             const lastState = historyStack.pop();

@@ -63,6 +63,7 @@ public abstract class Script_Instance_a3b56 : GH_ScriptInstance
     var model = Model_in as Model;
     var elem = model.elems[0];
     A = elem;
+    
   }
   #endregion
   #region Additional

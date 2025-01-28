@@ -1,12 +1,21 @@
-EFM = {
-    "GeomDict" : 
+EFM = 
+{
+    "GeomDict": 
     {
-        "Elements" :
-        {
-            "name" : "Emil",
-            "thickness" : 2004,
-            "geometries" : 2004
-        }
+        "Elements": 
+        [
+            {
+                "name": "Element1",
+                "thickness": 123,
+                "geometries": [ /* Rhino surfaces */ ]
+            },
+            {
+                "name": "Element2",
+                "thickness": 2004,
+                "geometries": [ /* Rhino surfaces */ ]
+            }
+            // etc.
+        ]
     },
     "MatDict" : 
     {

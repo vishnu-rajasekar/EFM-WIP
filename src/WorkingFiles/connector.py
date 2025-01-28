@@ -51,6 +51,8 @@ class MyComponent:
                     surfaces.append(surface)
 
             return surfaces
+        
+
 
         # Define the WebView dialog class
         class WebviewSliderDialog(forms.Form):
@@ -93,17 +95,49 @@ class MyComponent:
                     # Start building the js_script
                     js_script = "localStorage.clear();"
 
-                    # Always set elementsData, even if empty
-                    elements = sc.sticky.get("elements", [])
-                    elements_json = json.dumps([element.__dict__ for element in elements], ensure_ascii=False)
+                    # # Always set elementsData, even if empty
+                    # elements = sc.sticky.get("elements", [])
+                    # elements_json = json.dumps([element.__dict__ for element in elements], ensure_ascii=False)
+                    # js_script += f"""
+                    #     var elementsData = {elements_json};
+                    #     localStorage.setItem('elementsList', JSON.stringify(elementsData));
+                    #     window.dispatchEvent(new Event('elementsLoaded'));
+                    # """
+                    # # Execute the complete script
+                    # print("Executing js_script:", js_script)
+                    # sender.ExecuteScript(js_script)
+
+                    # >>> Use EFM instead of "elements" <<<
+                    EFM = sc.sticky.get("EFM", {})
+                    if "GeomDict" in EFM and "Elements" in EFM["GeomDict"]:
+                        # Elements is now a list of dicts, e.g. [{ "name": ..., "thickness": ..., "geometries": ... }, ...]
+                        elements_list = EFM["GeomDict"]["Elements"]
+                    else:
+                        elements_list = []
+
+                    # Convert the list of elements to JSON (but watch out if 'geometries' contains Rhino objects)
+                    # For demonstration, let's ignore 'geometries' or store a placeholder
+                    # A simple approach is to remove real geometry references before JSON:
+                    cleaned_elements = []
+                    for elem  in elements_list:
+                        cleaned_elements.append({
+                            "name": elem ["name"],
+                            "thickness": elem ["thickness"],
+                            # "geometries": ??? (can't directly JSON-serialize Rhino surfaces)
+                            "geometries": []
+                        })
+
+                    elements_json = json.dumps(cleaned_elements, ensure_ascii=False)
                     js_script += f"""
                         var elementsData = {elements_json};
                         localStorage.setItem('elementsList', JSON.stringify(elementsData));
                         window.dispatchEvent(new Event('elementsLoaded'));
                     """
-                    # Execute the complete script
+
                     print("Executing js_script:", js_script)
                     sender.ExecuteScript(js_script)
+
+
                 except Exception as ex:
                     print("Error in on_document_loaded:", ex)    
 
@@ -141,11 +175,45 @@ class MyComponent:
                         name = System.Uri.UnescapeDataString(name_thickness[0])
                         thickness = float(name_thickness[1])
                         surfaces = get_surfaces()
+
+                        # if surfaces:
+                        #     element = Element(name, surfaces, thickness)
+                        #     add_or_update_element(element)
+                        #     schedule_recompute()
+                        #     self.BringToFront()  # Bring the form back to the foreground
+
                         if surfaces:
-                            element = Element(name, surfaces, thickness)
-                            add_or_update_element(element)
+                            # Access EFM from sticky
+                            EFM = sc.sticky.get("EFM", {})
+                            if "GeomDict" not in EFM:
+                                EFM["GeomDict"] = {}
+                            if "Elements" not in EFM["GeomDict"]:
+                                EFM["GeomDict"]["Elements"] = []
+
+                            # Try to find an existing element by name
+                            found = False
+                            for elem in EFM["GeomDict"]["Elements"]:
+                                if elem["name"] == name:
+                                    # Update thickness + geometry
+                                    elem["thickness"] = thickness
+                                    # Store actual Rhino surfaces in a python list
+                                    elem["geometries"] = surfaces
+                                    found = True
+                                    break
+                            if not found:
+                                # Insert new element
+                                new_elem = {
+                                    "name": name,
+                                    "thickness": thickness,
+                                    "geometries": surfaces
+                                }
+                                EFM["GeomDict"]["Elements"].append(new_elem)
+
+                            # Save back
+                            sc.sticky["EFM"] = EFM
+
                             schedule_recompute()
-                            self.BringToFront()  # Bring the form back to the foreground
+                            self.BringToFront()  # bring form forward
                     else:
                         print("Invalid geometry update parameters.")
 
@@ -155,48 +223,69 @@ class MyComponent:
                         query = e.Uri.Query.strip('?')
                         params = dict(item.split('=') for item in query.split('&'))
                         encoded_data = params.get('data', '')
+
+                        # if encoded_data:
+                        #     elements_json = System.Uri.UnescapeDataString(encoded_data)
+                        #     updated_data = json.loads(elements_json) # list of dicts from JS
+
+                        #     old_elements = sc.sticky.get("elements", [])
+                        #     new_elements = []
+
+                        #     for d in updated_data:
+                        #         # See if there's an old element with the same name
+                        #         matching_old_elem = next((el for el in old_elements if el.name == d["name"]), None)
+
+                        #         if matching_old_elem:
+                        #             # Keep old geometries, update thickness
+                        #             geometries = matching_old_elem.geometries
+                        #         else:
+                        #             # It's a truly new element
+                        #             geometries = []
+
+                        #         # Build the final new element
+                        #         new_elem = Element(d["name"], geometries, d["thickness"])
+                        #         new_elements.append(new_elem)
+
+                        #     # Now replace sticky
+                        #     sc.sticky["elements"] = new_elements
                         if encoded_data:
-                            elements_json = System.Uri.UnescapeDataString(encoded_data)
-                            updated_data = json.loads(elements_json) # list of dicts from JS
+                            efm_json = System.Uri.UnescapeDataString(encoded_data)
+                            efm_dict = json.loads(efm_json)  # This is the entire EFM dictionary
 
-                            """ # Recreate Element instances
-                            elements = [Element(d['name'], d.get('geometries', []), d['thickness']) for d in elements_data]
-                            sc.sticky['elements'] = elements
-                            # SCHEDULE A RECOMPUTE
-                            schedule_recompute() """
+                            # Get or create existing EFM in sticky
+                            EFM = sc.sticky.get("EFM", {})
 
-                            old_elements = sc.sticky.get("elements", [])
-                            new_elements = []
+                            # Merge or replace the GeomDict portion
+                            # (Simple approach: fully replace)
+                            EFM["GeomDict"] = efm_dict["GeomDict"]
 
-                            for d in updated_data:
-                                # See if there's an old element with the same name
-                                matching_old_elem = next((el for el in old_elements if el.name == d["name"]), None)
+                            # Finally, store back in sc.sticky
+                            sc.sticky["EFM"] = EFM
 
-                                if matching_old_elem:
-                                    # Keep old geometries, update thickness
-                                    geometries = matching_old_elem.geometries
-                                else:
-                                    # It's a truly new element
-                                    geometries = []
-
-                                # Build the final new element
-                                new_elem = Element(d["name"], geometries, d["thickness"])
-                                new_elements.append(new_elem)
-
-                            # Now replace sticky
-                            sc.sticky["elements"] = new_elements
+                            # schedule a recompute so GH updates
 
                             schedule_recompute()
                     except Exception as ex:
-                        print("Error updating elements:", ex)
+                        print("Error updating elements (EFM):", ex)
 
                 if e.Uri.Scheme == "deleteelement":
                     e.Cancel = True  # Prevent actual navigation
                     value = e.Uri.Query.strip('?')
                     params = dict(item.split('=') for item in value.split('&'))
                     name = System.Uri.UnescapeDataString(params.get('name', ''))
+                    # if name:
+                    #     remove_element_by_name(name)
+                    #     schedule_recompute()
+                    # else:
+                    #     print("Invalid delete element parameters.")
                     if name:
-                        remove_element_by_name(name)
+                        # For demonstration, let's remove it from EFM if it exists
+                        EFM = sc.sticky.get("EFM", {})
+                        if "GeomDict" in EFM and "Elements" in EFM["GeomDict"]:
+                            EFM["GeomDict"]["Elements"] = [
+                                el for el in EFM["GeomDict"]["Elements"] if el["name"] != name
+                            ]
+                            sc.sticky["EFM"] = EFM
                         schedule_recompute()
                     else:
                         print("Invalid delete element parameters.")
@@ -254,19 +343,30 @@ class MyComponent:
                 # Bring the form to the front if it's already open
                 sc.sticky['form'].BringToFront()
 
-        #Ensure output 'a' is updated after running the UI
-        slider1_value = sc.sticky.get('slider1', None)
+        # #Ensure output 'a' is updated after running the UI
+        # slider1_value = sc.sticky.get('slider1', None)
 
         
-        elements = sc.sticky.get('elements', [])
-        element_names = DataTree[Object]()
-        element_geo = DataTree[Object]()
-        element_thik = DataTree[Object]()
-        for i, element in enumerate(elements):
-            path = GH_Path(i)
-            element_names.Add(element.name, path)
-            element_thik.Add(element.thickness, path)
-            for geo in element.geometries:
-                element_geo.Add(geo, path)        
+        # elements = sc.sticky.get('elements', [])
+        # element_names = DataTree[Object]()
+        # element_geo = DataTree[Object]()
+        # element_thik = DataTree[Object]()
+        # for i, element in enumerate(elements):
+        #     path = GH_Path(i)
+        #     element_names.Add(element.name, path)
+        #     element_thik.Add(element.thickness, path)
+        #     for geo in element.geometries:
+        #         element_geo.Add(geo, path)        
 
-        return element_names, element_geo, element_thik
+        # return element_names, element_geo, element_thik
+        # If user toggled get_inputs = True, show the form
+        if get_inputs:
+            if 'form' not in sc.sticky or not isinstance(sc.sticky['form'], WebviewSliderDialog) or not sc.sticky['form'].Visible:
+                form = WebviewSliderDialog()
+                sc.sticky['form'] = form
+                sc.sticky['form'].Show()
+            else:
+                sc.sticky['form'].BringToFront()
+
+        # Return placeholders to GH
+        return [], [], []
