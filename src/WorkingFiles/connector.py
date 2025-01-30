@@ -250,20 +250,56 @@ class MyComponent:
                         #     sc.sticky["elements"] = new_elements
                         if encoded_data:
                             efm_json = System.Uri.UnescapeDataString(encoded_data)
-                            efm_dict = json.loads(efm_json)  # This is the entire EFM dictionary
+                            new_efm_dict = json.loads(efm_json)  # This is what the browser sent
+                            new_elements = new_efm_dict["GeomDict"]["Elements"]
 
                             # Get or create existing EFM in sticky
                             EFM = sc.sticky.get("EFM", {})
 
-                            # Merge or replace the GeomDict portion
-                            # (Simple approach: fully replace)
-                            EFM["GeomDict"] = efm_dict["GeomDict"]
+                            # If there's no GeomDict or Elements yet, initialize them
+                            if "GeomDict" not in EFM:
+                                EFM["GeomDict"] = {}
+                            if "Elements" not in EFM["GeomDict"]:
+                                EFM["GeomDict"]["Elements"] = []
 
-                            # Finally, store back in sc.sticky
+                            old_elements = EFM["GeomDict"]["Elements"]
+
+                            # Build a merged list
+                            merged_list = []
+
+                            for new_elem in new_elements:
+                                # Find an old element that has the same name
+                                matched_old = None
+                                for old_el in old_elements:
+                                    if old_el["name"] == new_elem["name"]:
+                                        matched_old = old_el
+                                        break
+
+                                if matched_old:
+                                    # Preserve old geometry, update thickness, etc.
+                                    matched_old["thickness"] = new_elem["thickness"]
+                                    # Optionally also update name if changed, or any other fields
+                                    # BUT keep matched_old["geometries"] as is
+                                    merged_list.append(matched_old)
+                                else:
+                                    # This is a brand-new element that didn't exist before.
+                                    # Usually we won't have geometry yet; user must pick it
+                                    # or you can store an empty list:
+                                    new_elem["geometries"] = []
+                                    merged_list.append(new_elem)
+
+                            # OPTIONAL: If you want to remove elements that are
+                            #           NOT in new_elements, do NOT add them to merged_list.
+                            #           If you want to keep them, you can loop over old_elements
+                            #           and append any that weren't matched.
+
+                            # Overwrite old list with the newly merged version
+                            EFM["GeomDict"]["Elements"] = merged_list
+
+                            # Store back
                             sc.sticky["EFM"] = EFM
 
                             # schedule a recompute so GH updates
-
                             schedule_recompute()
                     except Exception as ex:
                         print("Error updating elements (EFM):", ex)
