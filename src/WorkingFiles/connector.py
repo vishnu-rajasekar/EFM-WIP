@@ -6,6 +6,7 @@ import Eto.Drawing as drawing
 import scriptcontext as sc
 import json
 import urllib.parse  # Import to handle URL encoding
+import uuid
 
 from Grasshopper.Kernel.Data import GH_Path
 from Grasshopper import DataTree
@@ -17,6 +18,7 @@ class Element:
         self.geometries = geometries
         self.thickness = thickness
 
+
 class MyComponent:
     
     #slider_values = {}
@@ -24,11 +26,10 @@ class MyComponent:
     def RunScript(gh_doc, component, get_inputs, path):
         # Define a standalone function to recompute Grasshopper solution
         def schedule_recompute():
-            # Get the current Grasshopper document
             gh_doc = Grasshopper.Instances.ActiveCanvas.Document
-            if gh_doc is not None and component is not None:
-                # Schedule a solution to recompute the Python component
-                gh_doc.ScheduleSolution(1, lambda doc: component.ExpireSolution(False))
+            def on_solution_end(doc):
+                doc.NewSolution(False)
+            gh_doc.ScheduleSolution(1, on_solution_end)
 
         # Define a function to select geometries from Rhino
         def get_surfaces():
@@ -93,7 +94,7 @@ class MyComponent:
             def on_document_loaded(self, sender, e):
                 try:
                     # Start building the js_script
-                    js_script = "localStorage.clear();"
+                    js_script = ""
 
                     # # Always set elementsData, even if empty
                     # elements = sc.sticky.get("elements", [])
@@ -176,46 +177,31 @@ class MyComponent:
                         thickness = float(name_thickness[1])
                         surfaces = get_surfaces()
 
-                        # if surfaces:
-                        #     element = Element(name, surfaces, thickness)
-                        #     add_or_update_element(element)
-                        #     schedule_recompute()
-                        #     self.BringToFront()  # Bring the form back to the foreground
-
                         if surfaces:
-                            # Access EFM from sticky
                             EFM = sc.sticky.get("EFM", {})
                             if "GeomDict" not in EFM:
-                                EFM["GeomDict"] = {}
-                            if "Elements" not in EFM["GeomDict"]:
-                                EFM["GeomDict"]["Elements"] = []
-
-                            # Try to find an existing element by name
-                            found = False
-                            for elem in EFM["GeomDict"]["Elements"]:
-                                if elem["name"] == name:
-                                    # Update thickness + geometry
-                                    elem["thickness"] = thickness
-                                    # Store actual Rhino surfaces in a python list
-                                    elem["geometries"] = surfaces
-                                    found = True
-                                    break
-                            if not found:
-                                # Insert new element
+                                EFM["GeomDict"] = {"Elements": []}
+                            
+                            # Find by name (for backward compatibility) or create new
+                            existing = next((e for e in EFM["GeomDict"]["Elements"] if e.get("name") == name), None)
+                            if existing:
+                                existing["thickness"] = thickness
+                                existing["geometries"] = surfaces
+                            else:
                                 new_elem = {
+                                    "id": str(uuid.uuid4()),
                                     "name": name,
                                     "thickness": thickness,
                                     "geometries": surfaces
                                 }
                                 EFM["GeomDict"]["Elements"].append(new_elem)
-
-                            # Save back
+                            
                             sc.sticky["EFM"] = EFM
 
                             schedule_recompute()
                             self.BringToFront()  # bring form forward
-                    else:
-                        print("Invalid geometry update parameters.")
+                        else:
+                            print("Invalid geometry update parameters.")
 
                 if e.Uri.Scheme == "updateelements":
                     e.Cancel = True
@@ -255,9 +241,21 @@ class MyComponent:
                             # Get or create existing EFM in sticky
                             EFM = sc.sticky.get("EFM", {})
 
-                            # Merge or replace the GeomDict portion
-                            # (Simple approach: fully replace)
-                            EFM["GeomDict"] = efm_dict["GeomDict"]
+                            # Merge existing geometries with new data
+                            existing_elements = EFM.get("GeomDict", {}).get("Elements", [])
+                            new_elements = efm_dict["GeomDict"]["Elements"]
+
+                            # Preserve geometries when names match
+                            for new_elem in new_elements:
+                                existing = next((e for e in existing_elements if e["id"] == new_elem.get("id")), None)
+                                if existing:
+                                    # Update name/thickness but keep existing geometries
+                                    new_elem["geometries"] = existing.get("geometries", [])
+                                else:
+                                    # New element - ensure it has an ID
+                                    new_elem["id"] = new_elem.get("id", str(uuid.uuid4()))
+
+                            EFM["GeomDict"]["Elements"] = new_elements
 
                             # Finally, store back in sc.sticky
                             sc.sticky["EFM"] = EFM

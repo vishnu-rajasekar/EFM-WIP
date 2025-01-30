@@ -5,11 +5,13 @@ EFM =
         "Elements": 
         [
             {
+                "id": str(uuid.uuid4()),  # Add UUID field
                 "name": "Element1",
                 "thickness": 123,
                 "geometries": [ /* Rhino surfaces */ ]
             },
             {
+                "id": str(uuid.uuid4()),  # Add UUID field
                 "name": "Element2",
                 "thickness": 2004,
                 "geometries": [ /* Rhino surfaces */ ]

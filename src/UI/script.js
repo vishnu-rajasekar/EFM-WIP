@@ -98,7 +98,8 @@ document.addEventListener('DOMContentLoaded', function () {
     ///////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////
     class Element {
-        constructor(name, geometries, thickness) {
+        constructor(id = null, name, geometries, thickness) {
+            this.id = id || crypto.randomUUID(); // Use existing ID or generate new
             this.name = name;
             this.geometries = geometries;
             this.thickness = thickness;
@@ -149,11 +150,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function writeTableRow() {
         const tableBody = document.querySelector('#geometry-table tbody');
-        tableBody.innerHTML = ""; // Clear existing rows before writing new ones
+        tableBody.innerHTML = "";
 
         if (elementsList && elementsList.length > 0) {
             elementsList.forEach((element, index) => {
-                addTableRow(element.name, element.thickness, index);
+                // Pass existing UUID to addTableRow
+                addTableRow(element.name, element.thickness, index, element.id);
             });
         }
     }
@@ -163,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ///////////////////////////////////////////////////////////////////////////////////////////
 
     // Modified addTableRow function to use the new save function
-    function addTableRow(name = "", thickness = "", elementIndex = null) {
+    function addTableRow(name = "", thickness = "", elementIndex = null, existingId = null) {
         const tableBody = document.querySelector('#geometry-table tbody');
         const newRow = tableBody.insertRow();
 
@@ -178,17 +180,17 @@ document.addEventListener('DOMContentLoaded', function () {
         let element;
 
         if (elementIndex !== null && elementsList[elementIndex]) {
-            // Use existing element
             element = elementsList[elementIndex];
         } else {
-            // Create new element
-            element = new Element(name, [], thickness);
+            // Create new element with existing ID if provided
+            element = new Element(existingId, name, [], thickness);
             elementsList.push(element);
             elementIndex = elementsList.length - 1;
         }
 
         // Store element index in row's data attribute
         newRow.dataset.elementIndex = elementIndex;
+        newRow.dataset.elementId = element.id; // Store UUID in data attribute
 
         // Add event listeners to input fields to update element
         const nameInput = nameCell.querySelector('.geometry-name');
@@ -196,10 +198,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         nameInput.addEventListener('change', function () {
             const updatedName = nameInput.value;
-            element.name = updatedName;
-            saveElementsToLocalStorage();
-            // NEW: send full updated data to Python
-            sendUpdatedElementsToPython();
+            const elementIndex = parseInt(newRow.dataset.elementIndex);
+            
+            // Make sure we have a valid element to update
+            if (elementsList[elementIndex]) {
+                elementsList[elementIndex].name = updatedName;
+                // Preserve the existing geometries and thickness
+                elementsList[elementIndex].geometries = elementsList[elementIndex].geometries || [];
+                elementsList[elementIndex].thickness = thicknessInput.value || "";
+                
+                saveElementsToLocalStorage();
+                sendUpdatedElementsToPython();
+            } else {
+                console.error('Element not found at index:', elementIndex);
+            }
         });
 
         thicknessInput.addEventListener('change', function () {
@@ -232,9 +244,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function attachRowClickEvents() {
         document.querySelectorAll('#geometry-table tbody tr').forEach(row => {
-            row.addEventListener('click', function () {
-                document.querySelectorAll('#geometry-table tbody tr').forEach(r => r.classList.remove('active-row'));
-                row.classList.add('active-row');
+            row.addEventListener('click', function (e) {
+                // Only trigger for row clicks, not input clicks
+                if (e.target.tagName === 'TD' || e.target.tagName === 'TR') {
+                    document.querySelectorAll('#geometry-table tbody tr').forEach(r => {
+                        r.classList.remove('active-row');
+                    });
+                    row.classList.add('active-row');
+                }
             });
         });
     }
@@ -253,12 +270,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function sendUpdatedElementsToPython() {
         const EFM = {
             GeomDict: {
-                Elements: elementsList // your existing array of {name, thickness, geometries=[]}
+                Elements: elementsList.map(element => ({
+                    id: element.id,
+                    name: element.name,
+                    thickness: parseFloat(element.thickness),
+                    geometries: []
+                }))
             }
-            // If you have other nested dicts, define them similarly
-            // MatDict: { ... },
-            // LoadDict: { ... },
-            // etc.
         };
         const efmJson = JSON.stringify(EFM);
         window.location.href = "updateelements:update?data=" + encodeURIComponent(efmJson);
@@ -282,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const elementsArray = JSON.parse(storedElements);
                 // Convert plain objects to Element instances
                 const elementsInstances = elementsArray.map(elementData => {
-                    return new Element(elementData.name, elementData.geometries, elementData.thickness);
+                    return new Element(elementData.id, elementData.name, elementData.geometries, elementData.thickness);
                 });
                 console.log("Elements loaded from localStorage:", elementsInstances);
                 return elementsInstances;
@@ -538,5 +556,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize tab event listeners
     attachTabEventListeners();
+
+    // Initialize elements from localStorage with UUIDs
+    const storedElements = localStorage.getItem('elementsList');
+    if (storedElements) {
+        try {
+            const elementsData = JSON.parse(storedElements);
+            elementsList = elementsData.map(elementData => 
+                new Element(elementData.id, elementData.name, [], elementData.thickness)
+            );
+        } catch (e) {
+            console.error("Error parsing elements:", e);
+        }
+    }
 });
 
