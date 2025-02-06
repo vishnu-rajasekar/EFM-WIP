@@ -1,7 +1,30 @@
 # EFM-WIP
 GH based files and scripts hosted for the EFM tool.
 
-# Steps
+# Description
+## EFM in a nutshell...
+1. Introduction
+2. Schematic Workflow
+
+
+
+# User Steps
+
+1. Model the surfaces that need to be converted into equivalent frame elements.  
+
+![Description of image](Manual/links/1_srfs.png)
+
+2. Layer Structure
+
+3. GH Script
+
+4. User Interface 
+
+5. Result 
+
+
+
+# Developer Steps
 1. VS code Intellisense:
     - As we are not running any of the python scripts from within VSC, we only need to reference the stubs files to get the intellisense to work. 
     - Create a conda env - C:\Users\vrajasekar\.conda\envs\rhinogh (Version of python (3.9.24) - same as .rhinocode's py39-rh8)
@@ -15,3 +38,4 @@ GH based files and scripts hosted for the EFM tool.
 # Caveat
 The UI form writes data to gh in a unidirectional manner, i.e., direct changes of input parameters does not reflect in the UI. 
 
+"C:\DEV\EFM-WIP\Manual\links\1_srfs.png"
