@@ -1,6 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net452</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <LangVersion>5</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -14,12 +14,12 @@
       <HintPath>C:\Program Files\Rhino 8\Plug-ins\Grasshopper\Grasshopper.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Karamba">
-      <HintPath>..\..\..\..\..\Program Files\Rhino 8\Plug-ins\Karamba\karamba.gha</HintPath>
-    </Reference>
     <Reference Include="KarambaCommon">
-      <HintPath>..\..\..\..\..\Program Files\Rhino 8\Plug-ins\Karamba\karambaCommon.dll</HintPath>
+      <HintPath>C:\Users\vrajasekar\AppData\Roaming\McNeel\Rhinoceros\packages\8.0\Karamba3D\3.1.50129\net8.0-windows\KarambaCommon.dll</HintPath>
     </Reference>
+	<Reference Include="Karamba">
+		<HintPath>C:\Users\vrajasekar\AppData\Roaming\McNeel\Rhinoceros\packages\8.0\Karamba3D\3.1.50129\net8.0-windows\Karamba.gha</HintPath>
+	</Reference>
     <Reference Include="RhinoCommon">
       <HintPath>C:\Program Files\Rhino 8\System\netcore\RhinoCommon.dll</HintPath>
       <Private>False</Private>
