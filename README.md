@@ -43,7 +43,7 @@ K-EFM (Karamba-Equivalent Frame Modelling) is a parametric tool for rapid struct
 <!-- ![Download the repository](Manual/links/Download_Repo.png) -->
 
 <figure align="center">
-    <img src="Manual/links/Download_Repo.png" alt="drawing" style="width:550px;"/>
+    <img src="Manual/links/Download_Repo.png" alt="drawing"/>
     <figcaption>Downloading the repo</figcaption>
 </figure>
 
@@ -54,7 +54,7 @@ K-EFM (Karamba-Equivalent Frame Modelling) is a parametric tool for rapid struct
 The tool allows for two modes of interaction with the GH script to input parameters and vizualize the results. The first is <ins>*Direct Interaction*</ins>, where the gh super-users direclty interact with GH definition to input data, change calculation/ verification parameters and visualize the results. The second is <ins>*Indirect Interaction*</ins> for non-expert gh users can interact with the definition using a user-friendly dialog box. The following image and section explains the two modes of interaction. 
 
 <figure  align="center">
-    <img src="Manual/links/UI.png" alt="drawing" style="width:550px;"/>
+    <img src="Manual/links/UI.png" alt="drawing" />
     <figcaption>Modes of interaction with the GH definition</figcaption>
 </figure >
 
@@ -65,23 +65,25 @@ The tool allows for two modes of interaction with the GH script to input paramet
 **1. Rhino Modelling:** Model the wall and roof surfaces which need to be converted into equivalent frame elements. Openings for door and windows need to be trimmed from the surface. Once created, add these surfaces into the layers, that are structured to take *concrete* walls, *stone* walls and conrete *floors* as inputs. 
 
 <figure align="center">
-    <img src="Manual/links/Layer_Structure.png" alt="drawing" style="width:550px;"/>
+    <img src="Manual/links/Layer_Structure.png" alt="drawing" />
     <figcaption>Input geometries as surface</figcaption>
 </figure>
 
 > [!WARNING]  
 > For surfaces with opening within them, the opening should be offset by approx. 0.10m from the outer boundary of the surface. 
 > <figure align="center">
->    <img src="Manual/links/Opening_Gap.png"alt="drawing" style="width:550px;"/>
+>    <img src="Manual/links/Opening_Gap.png"alt="drawing" />
 >    <figcaption>Input geometries as surface</figcaption>
 > </figure>
 
 
-**2. GH Reference:** <ins>Sync Mode</ins>—For smaller models, the geometry pipeline components automatically reads the surfaces in the rhino layers and feeds them into the definition. This enables real-time feedback for changes in geomtry of the building. <ins>Async Mode</ins>—Howvewer, for larger building, it is ideal to reference the geometries into geometric containers directly in Grasshopper. 
+**2. GH Reference:** 
+* <ins>Sync Mode</ins>—For smaller models, the geometry pipeline components automatically reads the surfaces in the rhino layers and feeds them into the definition. This enables real-time feedback for changes in geomtry of the building. 
+* <ins>Async Mode</ins>—However, for larger building, it is ideal to reference the geometries into geometric containers directly in Grasshopper. The boolean toggle can be used to switch between these to mode of referencing the geometries into grasshopper. 
 
 <figure align="center">
-    <img src="Manual/links/Sync_Async Mode_Button.png" alt="drawing" style="width:550px;"/>
-    <figcaption>Pipeline reads </figcaption>
+    <img src="Manual/links/Sync_Async Mode_Button.png" />
+    <figcaption>Button to switch between different modes of referencing </figcaption>
 </figure>
 
 3. GH Script
