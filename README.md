@@ -70,11 +70,11 @@ The tool allows for two modes of interaction with the GH script to input paramet
 </figure>
 
 > [!WARNING]  
-> For surfaces with opening within them, the opening should be offset by approx. 0.10m from the outer boundary of the surface. 
-> <figure align="center">
->    <img src="Manual/links/Opening_Gap.png"alt="drawing" />
+> For surfaces with opening within them, the opening should be offset by approx. 0.10m from the outer boundary of the surface.
+><figure align="center">
+>    <img src="Manual/links/Opening_Gap.png" alt="drawing" />
 >    <figcaption>Input geometries as surface</figcaption>
-> </figure>
+></figure>
 
 
 **2. GH Reference:** 
